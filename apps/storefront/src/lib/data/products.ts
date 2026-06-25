@@ -1,0 +1,162 @@
+"use server"
+
+import { sdk } from "@lib/config"
+import { sortProducts } from "@lib/util/sort-products"
+import { HttpTypes } from "@medusajs/types"
+import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
+import { getAuthHeaders } from "./cookies"
+import { getRegion, retrieveRegion } from "./regions"
+
+const productFields =
+  "*,*variants.calculated_price,+variants.inventory_quantity,*variants.images,*images,*categories,*collection,+metadata,+tags,"
+
+const mergeProductFields = (fields?: string) => {
+  if (!fields) {
+    return productFields
+  }
+
+  return `${productFields}${fields}`
+}
+
+export const listProducts = async ({
+  pageParam = 1,
+  queryParams,
+  countryCode,
+  regionId,
+}: {
+  pageParam?: number
+  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductListParams
+  countryCode?: string
+  regionId?: string
+}): Promise<{
+  response: { products: HttpTypes.StoreProduct[]; count: number }
+  nextPage: number | null
+  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductListParams
+}> => {
+  if (!countryCode && !regionId) {
+    throw new Error("Country code or region ID is required")
+  }
+
+  const limit = queryParams?.limit || 12
+  const _pageParam = Math.max(pageParam, 1)
+  const offset = _pageParam === 1 ? 0 : (_pageParam - 1) * limit
+
+  let region: HttpTypes.StoreRegion | undefined | null
+
+  if (countryCode) {
+    region = await getRegion(countryCode)
+  } else {
+    region = await retrieveRegion(regionId!)
+  }
+
+  if (!region) {
+    return {
+      response: { products: [], count: 0 },
+      nextPage: null,
+    }
+  }
+
+  const headers = {
+    ...(await getAuthHeaders()),
+  }
+
+  const { fields, ...restQueryParams } = queryParams || {}
+
+  return sdk.client
+    .fetch<{ products: HttpTypes.StoreProduct[]; count: number }>(
+      `/store/products`,
+      {
+        method: "GET",
+        query: {
+          limit,
+          offset,
+          region_id: region?.id,
+          ...restQueryParams,
+          fields: mergeProductFields(fields),
+        },
+        headers,
+        cache: "no-store",
+      }
+    )
+    .then(({ products, count }) => {
+      const nextPage = count > offset + limit ? pageParam + 1 : null
+
+      return {
+        response: {
+          products,
+          count,
+        },
+        nextPage: nextPage,
+        queryParams,
+      }
+    })
+}
+
+/**
+ * This will fetch 100 products to the Next.js cache and sort them based on the sortBy parameter.
+ * It will then return the paginated products based on the page and limit parameters.
+ */
+export const listProductsWithSort = async ({
+  page = 0,
+  queryParams,
+  sortBy = "created_at",
+  searchQuery,
+  countryCode,
+}: {
+  page?: number
+  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
+  sortBy?: SortOptions
+  searchQuery?: string
+  countryCode: string
+}): Promise<{
+  response: { products: HttpTypes.StoreProduct[]; count: number }
+  nextPage: number | null
+  queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
+}> => {
+  const limit = queryParams?.limit || 12
+
+  const {
+    response: { products, count },
+  } = await listProducts({
+    pageParam: 0,
+    queryParams: {
+      ...queryParams,
+      limit: searchQuery ? 1000 : 100,
+    },
+    countryCode,
+  })
+
+  const normalizedSearch = searchQuery?.trim().toLowerCase()
+  const searchedProducts = normalizedSearch
+    ? products.filter((product) => {
+        const searchableText = [
+          product.title,
+          product.collection?.title,
+          ...(product.categories?.map((category) => category.name) || []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+
+        return searchableText.includes(normalizedSearch)
+      })
+    : products
+
+  const sortedProducts = sortProducts(searchedProducts, sortBy)
+
+  const pageParam = (page - 1) * limit
+
+  const nextPage =
+    sortedProducts.length > pageParam + limit ? pageParam + limit : null
+
+  const paginatedProducts = sortedProducts.slice(pageParam, pageParam + limit)
+
+  return {
+    response: {
+      products: paginatedProducts,
+      count: sortedProducts.length,
+    },
+    nextPage,
+    queryParams,
+  }
+}
