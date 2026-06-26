@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { HttpTypes } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import ProductPreview from "@modules/products/components/product-preview"
@@ -266,15 +267,24 @@ function CategorySection({
             <LocalizedClientLink
               href={`/categories/${category.handle}`}
               key={category.id}
-              className="group min-h-[132px] rounded-rounded border border-[#dce8d5] bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:border-[#9ec479] hover:shadow-md"
+              className="group overflow-hidden rounded-rounded border border-[#dce8d5] bg-white shadow-sm transition hover:-translate-y-1 hover:border-[#9ec479] hover:shadow-md"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-circle bg-[#e4f4df] text-xl text-[#2f6b1f]">
-                {category.name.slice(0, 1)}
+              <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#f3f8ed]">
+                <Image
+                  alt={category.name}
+                  className="object-cover transition duration-300 group-hover:scale-105"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                  src={getCategoryImage(category.name)}
+                />
+                <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/25 to-transparent" />
               </div>
-              <p className="text-base-semi text-[#18310f]">{category.name}</p>
-              <p className="mt-1 text-small-regular text-[#65715f]">
-                {category.products?.length ?? 0} products
-              </p>
+              <div className="p-4">
+                <p className="text-base-semi text-[#18310f]">{category.name}</p>
+                <p className="mt-1 text-small-regular text-[#65715f]">
+                  {category.products?.length ?? 0} products
+                </p>
+              </div>
             </LocalizedClientLink>
           ))}
         </div>
@@ -286,6 +296,27 @@ function CategorySection({
       )}
     </section>
   )
+}
+
+const categoryImageMap: Record<string, string> = {
+  fruits: "/images/grocery/pomegranate.png",
+  vegetables: "/images/grocery/tomato.png",
+  dairy: "/images/grocery/milk.png",
+  bakery: "/images/grocery/bread.png",
+  beverages: "/images/grocery/orange.png",
+  snacks: "/images/grocery/chips.png",
+  "rice & grains": "/images/grocery/rice.png",
+  "rice and grains": "/images/grocery/rice.png",
+  "personal care": "/images/grocery/shampoo.png",
+  "household essentials": "/images/grocery/dishwashing-liquid.png",
+  "cooking oil": "/images/grocery/sunflower-oil.png",
+}
+
+const fallbackCategoryImage = "/images/grocery/apple.png"
+
+function getCategoryImage(categoryName: string) {
+  const normalizedName = categoryName.trim().toLowerCase()
+  return categoryImageMap[normalizedName] || fallbackCategoryImage
 }
 
 function ProductSection({

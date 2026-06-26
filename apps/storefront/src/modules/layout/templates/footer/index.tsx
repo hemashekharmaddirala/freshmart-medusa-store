@@ -5,10 +5,20 @@ import { Text, clx } from "@modules/common/components/ui"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 
 export default async function Footer() {
-  const { collections } = await listCollections({
-    fields: "*products",
-  })
-  const productCategories = await listCategories()
+  const [{ collections }, productCategories] = await Promise.all([
+    listCollections({
+      fields: "*products",
+    }).catch((error) => {
+      console.error("Failed to fetch footer collections", error)
+
+      return { collections: [], count: 0 }
+    }),
+    listCategories().catch((error) => {
+      console.error("Failed to fetch footer categories", error)
+
+      return []
+    }),
+  ])
 
   return (
     <footer className="w-full border-t border-[#dce8d5] bg-[#18310f] text-white">
