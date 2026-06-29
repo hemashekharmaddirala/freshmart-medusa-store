@@ -10,6 +10,10 @@ export const retrieveOrder = async (id: string) => {
     ...(await getAuthHeaders()),
   }
 
+  if (!("authorization" in headers)) {
+    return null
+  }
+
   const next = {
     ...(await getCacheOptions("orders")),
   }
@@ -36,6 +40,10 @@ export const listOrders = async (
 ) => {
   const headers = {
     ...(await getAuthHeaders()),
+  }
+
+  if (!("authorization" in headers)) {
+    return null
   }
 
   const next = {

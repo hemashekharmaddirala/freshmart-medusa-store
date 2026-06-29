@@ -237,6 +237,7 @@ export default async function seedFreshMartCatalog({
             prices: [
               { amount: price, currency_code: "eur" },
               { amount: price + 1, currency_code: "usd" },
+              { amount: price * 100, currency_code: "inr" },
             ],
           },
         ],

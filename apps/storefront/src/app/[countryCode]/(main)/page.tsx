@@ -6,6 +6,7 @@ import { listCategories } from "@lib/data/categories"
 import { listCollections } from "@lib/data/collections"
 import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
+import { notFound } from "next/navigation"
 
 export const metadata: Metadata = {
   title: "FreshMart | Premium Grocery Delivery",
@@ -24,23 +25,24 @@ export default async function Home(props: {
 
   const region = await getRegion(countryCode)
 
-  const { collections } = await listCollections({
-    fields: "id, handle, title",
-  })
-  const categories = await listCategories()
-
-  const {
-    response: { products },
-  } = await listProducts({
-    countryCode,
-    queryParams: {
-      limit: 100,
-    },
-  })
-
-  if (!collections || !region) {
-    return null
+  if (!region) {
+    notFound()
   }
+
+  const [{ collections }, categories, productsResponse] = await Promise.all([
+    listCollections({
+      fields: "id, handle, title",
+    }),
+    listCategories(),
+    listProducts({
+      regionId: region.id,
+      queryParams: {
+        limit: 100,
+      },
+    }),
+  ])
+
+  const products = productsResponse.response.products
 
   return (
     <>

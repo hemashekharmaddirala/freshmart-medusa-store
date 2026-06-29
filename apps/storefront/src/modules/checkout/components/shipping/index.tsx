@@ -101,7 +101,11 @@ const Shipping: React.FC<ShippingProps> = ({
           setCalculatedPricesMap(pricesMap)
           setIsLoadingPrices(false)
         })
+      } else {
+        setIsLoadingPrices(false)
       }
+    } else {
+      setIsLoadingPrices(false)
     }
 
     if (_pickupMethods?.find((m) => m.id === shippingMethodId)) {
@@ -114,6 +118,10 @@ const Shipping: React.FC<ShippingProps> = ({
   }
 
   const handleSubmit = () => {
+    if (!shippingMethodId) {
+      return
+    }
+
     router.push(pathname + "?step=payment", { scroll: false })
   }
 
@@ -144,6 +152,7 @@ const Shipping: React.FC<ShippingProps> = ({
       })
       .finally(() => {
         setIsLoading(false)
+        router.refresh()
       })
   }
 
@@ -276,7 +285,10 @@ const Shipping: React.FC<ShippingProps> = ({
                         <span className="justify-self-end text-ui-fg-base">
                           {option.price_type === "flat" ? (
                             convertToLocale({
-                              amount: option.amount!,
+                              amount:
+                                option.calculated_price?.calculated_amount ??
+                                option.amount ??
+                                0,
                               currency_code: cart?.currency_code,
                             })
                           ) : calculatedPricesMap[option.id] ? (
@@ -294,6 +306,11 @@ const Shipping: React.FC<ShippingProps> = ({
                     )
                   })}
                 </RadioGroup>
+                {!_shippingMethods?.length && (
+                  <Text className="text-ui-fg-muted">
+                    No delivery methods are available for this cart.
+                  </Text>
+                )}
               </div>
             </div>
           </div>
@@ -376,7 +393,7 @@ const Shipping: React.FC<ShippingProps> = ({
               className="mt"
               onClick={handleSubmit}
               isLoading={isLoading}
-              disabled={!cart.shipping_methods?.[0]}
+              disabled={!shippingMethodId}
               data-testid="submit-delivery-option-button"
             >
               Continue to payment

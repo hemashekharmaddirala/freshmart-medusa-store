@@ -2,57 +2,62 @@
 
 import { sdk } from "@lib/config"
 import { HttpTypes } from "@medusajs/types"
-import { getCacheOptions } from "./cookies"
 
 export const listRegions = async () => {
-  const next = {
-    ...(await getCacheOptions("regions")),
-  }
-
   return await sdk.client
     .fetch<{ regions: HttpTypes.StoreRegion[] }>(`/store/regions`, {
       method: "GET",
-      next,
-      cache: "force-cache",
+      cache: "no-store",
     })
     .then(({ regions }) => regions)
+    .catch((error) => {
+      console.error("Failed to fetch regions:", error)
+      return []
+    })
 }
 
 export const retrieveRegion = async (id: string) => {
-  const next = {
-    ...(await getCacheOptions(["regions", id].join("-"))),
-  }
-
   return await sdk.client
     .fetch<{ region: HttpTypes.StoreRegion }>(`/store/regions/${id}`, {
       method: "GET",
-      next,
-      cache: "force-cache",
+      cache: "no-store",
     })
     .then(({ region }) => region)
+    .catch((error) => {
+      console.error(`Failed to fetch region ${id}:`, error)
+      return null
+    })
 }
 
 const regionMap = new Map<string, HttpTypes.StoreRegion>()
 
 export const getRegion = async (countryCode: string) => {
-  if (regionMap.has(countryCode)) {
-    return regionMap.get(countryCode)
+  const normalizedCountryCode = countryCode?.trim().toLowerCase()
+
+  if (regionMap.has(normalizedCountryCode)) {
+    return regionMap.get(normalizedCountryCode)
   }
 
   const regions = await listRegions()
 
-  if (!regions) {
+  if (!regions.length) {
     return null
   }
 
+  regionMap.clear()
+
   regions.forEach((region) => {
     region.countries?.forEach((c) => {
-      regionMap.set(c?.iso_2 ?? "", region)
+      const iso2 = c?.iso_2?.trim().toLowerCase()
+
+      if (iso2) {
+        regionMap.set(iso2, region)
+      }
     })
   })
 
-  const region = countryCode
-    ? regionMap.get(countryCode)
+  const region = normalizedCountryCode
+    ? regionMap.get(normalizedCountryCode)
     : regionMap.get("us")
 
   return region

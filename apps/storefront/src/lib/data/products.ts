@@ -90,6 +90,18 @@ export const listProducts = async ({
         queryParams,
       }
     })
+    .catch((error) => {
+      console.error("Failed to fetch products:", error)
+
+      return {
+        response: {
+          products: [],
+          count: 0,
+        },
+        nextPage: null,
+        queryParams,
+      }
+    })
 }
 
 /**

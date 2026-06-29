@@ -12,6 +12,10 @@ export const retrieveCollection = async (id: string) => {
       }
     )
     .then(({ collection }) => collection)
+    .catch((error) => {
+      console.error(`Failed to fetch collection ${id}:`, error)
+      return null
+    })
 }
 
 export const listCollections = async (
@@ -29,6 +33,10 @@ export const listCollections = async (
       }
     )
     .then(({ collections }) => ({ collections, count: collections.length }))
+    .catch((error) => {
+      console.error("Failed to fetch collections:", error)
+      return { collections: [], count: 0 }
+    })
 }
 
 export const getCollectionByHandle = async (
@@ -40,4 +48,8 @@ export const getCollectionByHandle = async (
       cache: "no-store",
     })
     .then(({ collections }) => collections[0] || null)
+    .catch((error) => {
+      console.error(`Failed to fetch collection ${handle}:`, error)
+      return null
+    })
 }
