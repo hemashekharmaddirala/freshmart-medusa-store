@@ -35,7 +35,8 @@ export default async function initial_data_seed({
     ModuleRegistrationName.FULFILLMENT
   );
 
-  const countries = ["gb", "de", "dk", "se", "fr", "es", "it", "in"];
+  const countries = ["gb", "de", "dk", "se", "fr", "es", "it"];
+  const indiaCountry = "in";
 
   logger.info("Seeding store data...");
   const {
@@ -88,6 +89,10 @@ export default async function initial_data_seed({
               currency_code: "usd",
               is_default: false,
             },
+            {
+              currency_code: "inr",
+              is_default: false,
+            },
           ],
           default_sales_channel_id: defaultSalesChannel.id,
         },
@@ -103,17 +108,24 @@ export default async function initial_data_seed({
           name: "Europe",
           currency_code: "eur",
           countries,
-          payment_providers: ["pp_system_default"],
+          payment_providers: ["pp_system_default", "pp_razorpay_razorpay"],
+        },
+        {
+          name: "India",
+          currency_code: "inr",
+          countries: [indiaCountry],
+          payment_providers: ["pp_system_default", "pp_razorpay_razorpay"],
         },
       ],
     },
   });
   const region = regionResult[0];
+  const indiaRegion = regionResult[1];
   logger.info("Finished seeding regions.");
 
   logger.info("Seeding tax regions...");
   await createTaxRegionsWorkflow(container).run({
-    input: countries.map((country_code) => ({
+    input: [...countries, indiaCountry].map((country_code) => ({
       country_code,
       provider_id: "tp_system",
     })),
@@ -192,7 +204,7 @@ export default async function initial_data_seed({
             type: "country",
           },
           {
-            country_code: "in",
+            country_code: indiaCountry,
             type: "country",
           },
         ],
@@ -239,6 +251,10 @@ export default async function initial_data_seed({
             region_id: region.id,
             amount: 10,
           },
+          {
+            region_id: indiaRegion.id,
+            amount: 50,
+          },
         ],
         rules: [
           {
@@ -280,6 +296,10 @@ export default async function initial_data_seed({
           {
             region_id: region.id,
             amount: 10,
+          },
+          {
+            region_id: indiaRegion.id,
+            amount: 100,
           },
         ],
         rules: [

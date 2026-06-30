@@ -41,6 +41,22 @@ const fileProvider =
     ? s3FileProvider
     : localFileProvider
 
+const razorpayPaymentProviders =
+  process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET
+    ? [
+        {
+          resolve: "./src/modules/razorpay-payment",
+          id: "razorpay",
+          options: {
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
+            webhook_secret: process.env.RAZORPAY_WEBHOOK_SECRET,
+            auto_capture: process.env.RAZORPAY_AUTO_CAPTURE !== "false",
+          },
+        },
+      ]
+    : []
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
@@ -60,6 +76,12 @@ module.exports = defineConfig({
       resolve: "@medusajs/medusa/file",
       options: {
         providers: [fileProvider],
+      },
+    },
+    {
+      resolve: "@medusajs/medusa/payment",
+      options: {
+        providers: razorpayPaymentProviders,
       },
     },
     {

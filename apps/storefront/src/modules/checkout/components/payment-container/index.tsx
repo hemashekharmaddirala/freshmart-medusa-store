@@ -15,7 +15,10 @@ type PaymentContainerProps = {
   paymentProviderId: string
   selectedPaymentOptionId: string | null
   disabled?: boolean
-  paymentInfoMap: Record<string, { title: string; icon: JSX.Element }>
+  paymentInfoMap: Record<
+    string,
+    { title: string; description?: string; icon: JSX.Element }
+  >
   children?: React.ReactNode
 }
 
@@ -38,15 +41,22 @@ const PaymentContainer: React.FC<PaymentContainerProps> = ({
         {
           "border-ui-border-interactive":
             selectedPaymentOptionId === paymentProviderId,
-        }
+        },
       )}
     >
       <div className="flex items-center justify-between ">
         <div className="flex items-center gap-x-4">
           <Radio checked={selectedPaymentOptionId === paymentProviderId} />
-          <Text className="text-base-regular">
-            {paymentInfoMap[paymentProviderId]?.title || paymentProviderId}
-          </Text>
+          <div className="flex flex-col">
+            <Text className="text-base-regular">
+              {paymentInfoMap[paymentProviderId]?.title || paymentProviderId}
+            </Text>
+            {paymentInfoMap[paymentProviderId]?.description && (
+              <Text className="txt-small text-ui-fg-subtle">
+                {paymentInfoMap[paymentProviderId].description}
+              </Text>
+            )}
+          </div>
           {isManual(paymentProviderId) && isDevelopment && (
             <PaymentTest className="hidden small:block" />
           )}
@@ -114,7 +124,7 @@ export const StripeCardContainer = ({
               options={useOptions as StripeCardElementOptions}
               onChange={(e) => {
                 setCardBrand(
-                  e.brand && e.brand.charAt(0).toUpperCase() + e.brand.slice(1)
+                  e.brand && e.brand.charAt(0).toUpperCase() + e.brand.slice(1),
                 )
                 setError(e.error?.message || null)
                 setCardComplete(e.complete)

@@ -7,7 +7,7 @@ import React from "react"
 /* Map of payment provider_id to their title and icon. Add in any payment providers you want to use. */
 export const paymentInfoMap: Record<
   string,
-  { title: string; icon: React.JSX.Element }
+  { title: string; description?: string; icon: React.JSX.Element }
 > = {
   pp_stripe_stripe: {
     title: "Credit card",
@@ -30,7 +30,14 @@ export const paymentInfoMap: Record<
     icon: <PayPal />,
   },
   pp_system_default: {
-    title: "Manual Payment",
+    title: "Cash on Delivery (COD)",
+    description: "Pay when your order is delivered.",
+    icon: <CreditCard />,
+  },
+  pp_razorpay_razorpay: {
+    title: "Online Payment (Razorpay)",
+    description:
+      "Pay using UPI, Google Pay, PhonePe, Paytm, Debit/Credit Card.",
     icon: <CreditCard />,
   },
   // Add more payment providers here
@@ -48,6 +55,26 @@ export const isPaypal = (providerId?: string) => {
 }
 export const isManual = (providerId?: string) => {
   return providerId?.startsWith("pp_system_default")
+}
+
+export const isRazorpay = (providerId?: string) => {
+  return providerId?.startsWith("pp_razorpay_razorpay")
+}
+
+const razorpayMethodLabels: Record<string, string> = {
+  upi: "UPI",
+  card: "Debit/Credit Card",
+  netbanking: "Net Banking",
+  wallet: "Wallet (Google Pay, PhonePe, Paytm)",
+  emi: "EMI",
+}
+
+export const formatRazorpayPaymentMethod = (method?: string) => {
+  if (!method) {
+    return "Online payment"
+  }
+
+  return razorpayMethodLabels[method] ?? method.toUpperCase()
 }
 
 // Add currencies that don't need to be divided by 100
